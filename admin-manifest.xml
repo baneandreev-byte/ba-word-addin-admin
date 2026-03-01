@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xsi:type="TaskPaneApp">
+
+  <!-- ============================================ -->
+  <!-- BiroA ADMIN – V1.0.0                         -->
+  <!-- Upravljanje templejt poljima + GitHub sync    -->
+  <!-- ============================================ -->
+
+  <!-- DRUGAČIJI ID od korisničke app! -->
+  <Id>7a3c9f12-84ab-4d2e-b5f7-9e0c1d2f3a4b</Id>
+  <Version>1.0.0.1</Version>
+  <ProviderName>BiroA</ProviderName>
+  <DefaultLocale>sr-RS</DefaultLocale>
+
+  <DisplayName DefaultValue="BiroA Admin"/>
+  <Description DefaultValue="Upravljanje templejt poljima i GitHub sinhronizacija"/>
+
+  <IconUrl DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/assets/icon-80.png"/>
+  <SupportUrl DefaultValue="https://baneandreev-byte.github.io/ba-word-addin"/>
+
+  <AppDomains>
+    <AppDomain>https://baneandreev-byte.github.io</AppDomain>
+    <AppDomain>https://raw.githubusercontent.com</AppDomain>
+    <AppDomain>https://api.github.com</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Document"/>
+  </Hosts>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/admin.html"/>
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides
+    xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+    xsi:type="VersionOverridesV1_0">
+
+    <Requirements>
+      <bt:Sets DefaultMinVersion="1.1">
+        <bt:Set Name="WordApi"/>
+      </bt:Sets>
+    </Requirements>
+
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+
+          <FunctionFile resid="AdminCommands.Url"/>
+
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="BiroAAdmin.Group">
+                <Label resid="AdminGroup.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="AdminIcon.16"/>
+                  <bt:Image size="32" resid="AdminIcon.32"/>
+                  <bt:Image size="80" resid="AdminIcon.80"/>
+                </Icon>
+
+                <Control xsi:type="Button" id="BiroAAdmin.Button">
+                  <Label resid="AdminBtn.Label"/>
+                  <Supertip>
+                    <Title resid="AdminBtn.Label"/>
+                    <Description resid="AdminBtn.Desc"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="AdminIcon.16"/>
+                    <bt:Image size="32" resid="AdminIcon.32"/>
+                    <bt:Image size="80" resid="AdminIcon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <SourceLocation resid="AdminTaskpane.Url"/>
+                  </Action>
+                </Control>
+
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="AdminIcon.16" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/assets/icon-16.png"/>
+        <bt:Image id="AdminIcon.32" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/assets/icon-32.png"/>
+        <bt:Image id="AdminIcon.80" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/assets/icon-80.png"/>
+      </bt:Images>
+
+      <bt:Urls>
+        <bt:Url id="AdminTaskpane.Url" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/admin.html"/>
+        <bt:Url id="AdminCommands.Url" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/commands.html"/>
+      </bt:Urls>
+
+      <bt:ShortStrings>
+        <bt:String id="AdminGroup.Label" DefaultValue="BiroA Admin"/>
+        <bt:String id="AdminBtn.Label"   DefaultValue="BiroA Admin"/>
+      </bt:ShortStrings>
+
+      <bt:LongStrings>
+        <bt:String id="AdminBtn.Desc" DefaultValue="Upravljanje templejt poljima i GitHub sinhronizacija"/>
+      </bt:LongStrings>
+    </Resources>
+
+  </VersionOverrides>
+
+</OfficeApp>

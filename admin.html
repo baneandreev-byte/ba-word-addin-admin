@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BiroA Admin</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+
+<body>
+  <div class="shell">
+
+    <!-- Header -->
+    <div class="admin-header">
+      <span class="admin-header-icon">⚙️</span>
+      <div class="admin-header-text">
+        <div class="admin-header-title">BiroA Admin</div>
+        <div class="admin-header-sub" id="headerSub">Upravljanje templejt poljima</div>
+      </div>
+      <button id="btnGitHub" class="btn-github-header" title="GitHub operacije">🐙 GitHub</button>
+    </div>
+
+    <!-- Status bar -->
+    <div id="status" class="status hidden"></div>
+
+    <!-- Tab buttons -->
+    <div class="tabs">
+      <button id="btnTabFields" class="tab-btn active">POLJA</button>
+      <button id="btnTabConfig" class="tab-btn">KONFIGURACIJA</button>
+    </div>
+
+    <!-- ===== TAB: POLJA ===== -->
+    <div id="panelFields" class="content">
+
+      <!-- Akcijski bar -->
+      <div class="action-bar">
+        <button id="btnInsertField" class="btn-primary">＋ Ubaci polje</button>
+        <button id="btnScanDoc" class="btn-secondary">🔍 Skeniraj</button>
+        <button id="btnFillTest" class="btn-secondary" title="Popuni dokument test vrednostima">▶ Popuni</button>
+        <button id="btnClearTest" class="btn-secondary" title="Vrati {POLJE} placeholder">↺ Očisti</button>
+        <button id="btnSyncGitHub" class="btn-github-action">↑ Snimi na GitHub</button>
+      </div>
+
+      <!-- Table header -->
+      <div class="table-header">
+        <div class="th"></div>
+        <div class="th">POLJE</div>
+        <div class="th">VREDNOST (TEST)</div>
+        <div class="th">TIP</div>
+        <div class="th"></div>
+      </div>
+
+      <!-- Rows container -->
+      <div id="rows" class="table-body">
+        <div class="empty-state">
+          <div class="empty-icon">📄</div>
+          <div>Otvori templejt pa klikni <strong>Skeniraj</strong><br>ili dodaj nova polja ručno.</div>
+        </div>
+      </div>
+
+      <!-- Add row -->
+      <button id="btnAddRow" class="btn-add">＋ Dodaj red</button>
+
+      <!-- Help -->
+      <div class="help">
+        <strong>⋮⋮ PREVUCI</strong> – promeni redosled polja<br>
+        <strong>UBACI POLJE</strong> – selektuj red → klikni lokaciju u templejtu<br>
+        <strong>SKENIRAJ</strong> – učitava postojeća BA_FIELD polja iz dokumenta<br>
+        <strong>▶ POPUNI</strong> – ubacuje test vrednosti u dokument radi provere<br>
+        <strong>↺ OČISTI</strong> – vraća {POLJE} placeholder<br>
+        <strong>↑ SNIMI</strong> – commit .dotx fajla na GitHub (sa praznim vrednostima)
+      </div>
+
+    </div>
+
+    <!-- ===== TAB: KONFIGURACIJA ===== -->
+    <div id="panelConfig" class="content hidden">
+
+      <div class="config-section-label">GITHUB REPOZITORIJUM</div>
+      <div class="config-card">
+        <div class="form-group">
+          <label class="form-label">Raw base URL:</label>
+          <input type="text" id="cfgBaseUrl" class="form-input"
+            placeholder="https://raw.githubusercontent.com/korisnik/repo/main" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">API URL:</label>
+          <input type="text" id="cfgApiUrl" class="form-input"
+            placeholder="https://api.github.com/repos/korisnik/repo/contents" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">GitHub Token (write pristup za commit):</label>
+          <input type="password" id="cfgToken" class="form-input" placeholder="ghp_..." />
+          <div class="form-hint">Token se čuva u Custom XML dokumenta.</div>
+        </div>
+      </div>
+
+      <div class="config-section-label">GRANE (VRSTE PROJEKATA)</div>
+      <div id="branchesList" class="branches-list"></div>
+      <button id="btnAddBranch" class="btn-add">＋ Dodaj granu</button>
+
+      <div class="config-actions">
+        <button id="btnTestConn" class="btn-secondary">🔌 Test konekcije</button>
+        <button id="btnSaveConfig" class="btn-primary">💾 Sačuvaj podešavanja</button>
+      </div>
+
+    </div>
+
+  </div><!-- /shell -->
+
+
+  <!-- ========== MODAL: Ubaci polje (tip+format) ========== -->
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modal" class="modal-dialog hidden">
+    <div class="modal-header">
+      <h3>Ubaci polje u dokument</h3>
+      <button id="btnModalClose" class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-name-box">
+        <span id="modalFieldName" class="field-name-pill"></span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tip podatka:</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="ftype" value="text" checked /><span>Tekst</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="ftype" value="date" /><span>Datum</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="ftype" value="number" /><span>Broj</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="formatSelect">Format:</label>
+        <select id="formatSelect" class="form-select"></select>
+        <div id="formatHint" class="format-hint"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="btnModalCancel" class="btn-secondary">Otkaži</button>
+      <button id="btnModalOk" class="btn-primary">OK – Ubaci u dokument</button>
+    </div>
+  </div>
+
+  <!-- ========== MODAL: GitHub picker / commit ========== -->
+  <div id="modalGHBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modalGH" class="modal-dialog hidden">
+    <div class="modal-header">
+      <h3 id="modalGHTitle">GitHub</h3>
+      <button id="btnModalGHClose" class="modal-close">×</button>
+    </div>
+    <div class="modal-body" id="modalGHBody"></div>
+    <div class="modal-footer" id="modalGHFooter">
+      <button id="btnModalGHCancel" class="btn-secondary">Otkaži</button>
+    </div>
+  </div>
+
+  <!-- ========== MODAL: Preimenuj polje ========== -->
+  <div id="modalRenameBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modalRename" class="modal-dialog hidden">
+    <div class="modal-header">
+      <h3>Preimenuj polje</h3>
+      <button id="btnRenameClose" class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Staro ime:</label>
+        <div id="renameOldName" class="field-name-pill" style="display:inline-block;"></div>
+      </div>
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">Novo ime:</label>
+        <input type="text" id="renameNewName" class="form-input" placeholder="Novo ime polja" />
+        <div class="form-hint">Svi content controls sa ovim imenom u dokumentu biće ažurirani.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="btnRenameCancel" class="btn-secondary">Otkaži</button>
+      <button id="btnRenameOk" class="btn-primary">Preimenuj</button>
+    </div>
+  </div>
+
+  <!-- ========== MODAL: Nova / izmeni grana ========== -->
+  <div id="modalBranchBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modalBranch" class="modal-dialog hidden">
+    <div class="modal-header">
+      <h3 id="modalBranchTitle">Nova grana</h3>
+      <button id="btnBranchClose" class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">ID grane (folder na GitHubu):</label>
+        <input type="text" id="branchIdInput" class="form-input" placeholder="npr. 01 IDR" />
+        <div class="form-hint">Mora tačno da odgovara imenu foldera u GitHub repozitorijumu.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Naziv koji vidi korisnik:</label>
+        <input type="text" id="branchLabelInput" class="form-input" placeholder="npr. IDR – Idejno rešenje" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fajlovi u grani:</label>
+        <div id="branchFilesEditor" class="branch-files-editor"></div>
+        <button id="btnAddBranchFile" class="btn-add-small">＋ Dodaj fajl</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="btnBranchCancel" class="btn-secondary">Otkaži</button>
+      <button id="btnBranchSave" class="btn-primary">Sačuvaj granu</button>
+    </div>
+  </div>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
