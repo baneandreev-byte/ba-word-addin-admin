@@ -19,9 +19,9 @@
   <DisplayName DefaultValue="BiroA Admin"/>
   <Description DefaultValue="Upravljanje templejt poljima i GitHub sinhronizacija"/>
 
-  <IconUrl DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/assets/icon-80.png"/>
-  <SupportUrl DefaultValue="https://baneandreev-byte.github.io/ba-word-addin"/>
+  <IconUrl DefaultValue="https://baneandreev-byte.github.io/ba-word-addin-admin/assets/icon-admin-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://baneandreev-byte.github.io/ba-word-addin-admin/assets/icon-admin-80.png"/>
+  <SupportUrl DefaultValue="https://baneandreev-byte.github.io/ba-word-addin-admin"/>
 
   <AppDomains>
     <AppDomain>https://baneandreev-byte.github.io</AppDomain>
@@ -34,7 +34,7 @@
   </Hosts>
 
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/admin.html"/>
+    <SourceLocation DefaultValue="https://baneandreev-byte.github.io/ba-word-addin-admin/admin.html"/>
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
@@ -91,14 +91,14 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="AdminIcon.16" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/assets/icon-16.png"/>
-        <bt:Image id="AdminIcon.32" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/assets/icon-32.png"/>
-        <bt:Image id="AdminIcon.80" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/assets/icon-80.png"/>
+        <bt:Image id="AdminIcon.16" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin-admin/assets/icon-admin-16.png"/>
+        <bt:Image id="AdminIcon.32" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin-admin/assets/icon-admin-32.png"/>
+        <bt:Image id="AdminIcon.80" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin-admin/assets/icon-admin-80.png"/>
       </bt:Images>
 
       <bt:Urls>
-        <bt:Url id="AdminTaskpane.Url" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/admin.html"/>
-        <bt:Url id="AdminCommands.Url" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin/commands.html"/>
+        <bt:Url id="AdminTaskpane.Url" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin-admin/admin.html"/>
+        <bt:Url id="AdminCommands.Url" DefaultValue="https://baneandreev-byte.github.io/ba-word-addin-admin/commands.html"/>
       </bt:Urls>
 
       <bt:ShortStrings>
