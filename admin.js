@@ -843,9 +843,7 @@ async function doOpenFromGitHub(branch, fileName) {
 
   try {
     const url = buildRawUrl(branch.id, fileName);
-    const resp = await fetch(url, {
-      headers: config.token ? { "Authorization": `token ${config.token}` } : {}
-    });
+    const resp = await fetch(url);
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const buffer = await resp.arrayBuffer();
