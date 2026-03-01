@@ -724,9 +724,7 @@ async function doGitHubCommit(branch, fileName) {
     body.innerHTML = `<div class="gh-loading"><div class="gh-loading-icon">⬇️</div><div>Skidam original sa GitHub-a...</div></div>`;
 
     const rawUrl = buildRawUrl(branch.id, fileName);
-    const dlResp = await fetch(rawUrl, {
-      headers: config.token ? { "Authorization": `token ${config.token}` } : {}
-    });
+    const dlResp = await fetch(rawUrl);
 
     if (!dlResp.ok) throw new Error(`Download greška: HTTP ${dlResp.status}`);
     const originalBuffer = await dlResp.arrayBuffer();
