@@ -145,7 +145,7 @@ body {
 /* ========== Table ========== */
 .table-header {
   display: grid;
-  grid-template-columns: 26px 1fr 1fr 90px 92px;
+  grid-template-columns: 26px 1fr 1fr 90px 64px;
   gap: 6px;
   padding: 8px 12px;
   background: #f3f4f6;
@@ -170,7 +170,7 @@ body {
 /* ========== Row ========== */
 .row {
   display: grid;
-  grid-template-columns: 26px 1fr 1fr 90px 92px;
+  grid-template-columns: 26px 1fr 1fr 90px 64px;
   gap: 6px;
   padding: 8px 12px;
   border-top: 1px solid #e5e7eb;

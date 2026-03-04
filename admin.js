@@ -549,39 +549,69 @@ async function insertFieldAtSelection() {
 async function scanDocument() {
   setStatus("Skeniram dokument...", "info");
 
+  // Namespace koji klijentska aplikacija koristi za čuvanje vrednosti
+  const CLIENT_XML_NS = "http://biroa.rs/word-addin/state";
+
   try {
     const found = [];
     const seenKeys = new Set();
 
     await Word.run(async (context) => {
+      // 1) Učitaj content controls (za tip/format)
       const ccs = context.document.contentControls;
-      ccs.load("items/tag,title,text,placeholderText");
+      ccs.load("items/tag");
       await context.sync();
 
       for (const cc of ccs.items) {
         const meta = parseTag(cc.tag || "");
         if (!meta || seenKeys.has(meta.key)) continue;
         seenKeys.add(meta.key);
-
-        // Vrednost: uzmi placeholder ako postoji, inače tekst iz CC-a (ako nije {KEY})
-        let value = "";
-        try {
-          const ph = cc.placeholderText;
-          if (ph && ph !== token(meta.key)) value = ph;
-        } catch {}
-        if (!value) {
-          const txt = (cc.text || "").trim();
-          if (txt && txt !== token(meta.key)) value = txt;
-        }
-
         found.push({
           id: crypto.randomUUID(),
           field: meta.key,
           type: meta.type,
           format: meta.format,
-          value: value,
+          value: "",
           description: "",
         });
+      }
+
+      // 2) Učitaj sačuvane vrednosti iz klijentskog XML state-a
+      const parts = context.document.customXmlParts;
+      parts.load("items");
+      await context.sync();
+      for (const p of parts.items) p.load("namespaceUri");
+      await context.sync();
+
+      const clientPart = parts.items.find(p => p.namespaceUri === CLIENT_XML_NS);
+      if (clientPart) {
+        const xmlResult = clientPart.getXml();
+        await context.sync();
+        const str = xmlResult.value || "";
+        // Parsiraj <item field="..." value="..."/> atribute
+        const re = /<item\s+([^/>]+?)\s*\/>/g;
+        let m;
+        const savedValues = new Map();
+        while ((m = re.exec(str))) {
+          const attrs = m[1];
+          const getAttr = (name) => {
+            const rm = new RegExp(`${name}="([^"]*)"`);
+            const mm = rm.exec(attrs);
+            if (!mm) return "";
+            return mm[1]
+              .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+              .replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&");
+          };
+          const f = getAttr("field");
+          const v = getAttr("value");
+          if (f) savedValues.set(f, v);
+        }
+        // Ubaci sačuvane vrednosti u pronađena polja
+        for (const row of found) {
+          if (savedValues.has(row.field)) {
+            row.value = savedValues.get(row.field);
+          }
+        }
       }
     });
 
