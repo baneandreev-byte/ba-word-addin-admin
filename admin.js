@@ -50,7 +50,7 @@ const FORMAT_OPTIONS = {
 // ==========================================
 // STATE
 // ==========================================
-let rows = [];               // [{ id, field, type, format }]
+let rows = [];               // [{ id, field, type, format, value, description }]
 let config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 let selectedRowIndex = null;
 
@@ -63,6 +63,9 @@ let editingBranchIndex = null;
 
 // Rename modal state
 let renamingRowIndex = null;
+
+// Description modal state
+let descriptionRowIndex = null;
 
 // ==========================================
 // DOM helper
@@ -230,6 +233,17 @@ function renderRows() {
     const actions = document.createElement("div");
     actions.className = "row-actions";
 
+    const btnDesc = document.createElement("button");
+    btnDesc.className = "row-btn describe";
+    btnDesc.innerHTML = "💬";
+    btnDesc.title = r.description ? `Objašnjenje: ${r.description}` : "Dodaj objašnjenje za polje";
+    if (r.description) btnDesc.classList.add("has-desc");
+    btnDesc.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectedRowIndex = idx;
+      openDescriptionModal(idx);
+    });
+
     const btnRename = document.createElement("button");
     btnRename.className = "row-btn rename";
     btnRename.innerHTML = "✎";
@@ -246,14 +260,13 @@ function renderRows() {
     btnDel.title = "Obriši red";
     btnDel.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (confirm(`Obrisati red "${r.field || "(prazno)"}"?`)) {
-        rows.splice(idx, 1);
-        if (selectedRowIndex === idx) selectedRowIndex = null;
-        else if (selectedRowIndex > idx) selectedRowIndex--;
-        renderRows();
-      }
+      rows.splice(idx, 1);
+      if (selectedRowIndex === idx) selectedRowIndex = null;
+      else if (selectedRowIndex > idx) selectedRowIndex--;
+      renderRows();
     });
 
+    actions.appendChild(btnDesc);
     actions.appendChild(btnRename);
     actions.appendChild(btnDel);
 
@@ -422,6 +435,36 @@ function closeRenameModal() {
   renamingRowIndex = null;
 }
 
+// ==========================================
+// DESCRIPTION MODAL
+// ==========================================
+function openDescriptionModal(idx) {
+  descriptionRowIndex = idx;
+  const r = rows[idx];
+  el("descFieldName").textContent = r.field || "(prazno)";
+  const ta = el("descText");
+  if (ta) ta.value = r.description || "";
+
+  el("modalDesc")?.classList.remove("hidden");
+  el("modalDescBackdrop")?.classList.remove("hidden");
+  setTimeout(() => ta?.focus(), 50);
+}
+
+function closeDescriptionModal() {
+  el("modalDesc")?.classList.add("hidden");
+  el("modalDescBackdrop")?.classList.add("hidden");
+  descriptionRowIndex = null;
+}
+
+function saveDescriptionModal() {
+  if (descriptionRowIndex === null) return;
+  const r = rows[descriptionRowIndex];
+  r.description = (el("descText")?.value || "").trim();
+  closeDescriptionModal();
+  renderRows();
+  setStatus(`Objašnjenje ${r.description ? "sačuvano" : "obrisano"}: ${r.field}`, "success");
+}
+
 async function doRename() {
   if (renamingRowIndex === null) return;
   const r = rows[renamingRowIndex];
@@ -512,19 +555,32 @@ async function scanDocument() {
 
     await Word.run(async (context) => {
       const ccs = context.document.contentControls;
-      ccs.load("items/tag,title");
+      ccs.load("items/tag,title,text,placeholderText");
       await context.sync();
 
       for (const cc of ccs.items) {
         const meta = parseTag(cc.tag || "");
         if (!meta || seenKeys.has(meta.key)) continue;
         seenKeys.add(meta.key);
+
+        // Vrednost: uzmi placeholder ako postoji, inače tekst iz CC-a (ako nije {KEY})
+        let value = "";
+        try {
+          const ph = cc.placeholderText;
+          if (ph && ph !== token(meta.key)) value = ph;
+        } catch {}
+        if (!value) {
+          const txt = (cc.text || "").trim();
+          if (txt && txt !== token(meta.key)) value = txt;
+        }
+
         found.push({
           id: crypto.randomUUID(),
           field: meta.key,
           type: meta.type,
           format: meta.format,
-          value: "",
+          value: value,
+          description: "",
         });
       }
     });
@@ -1389,7 +1445,7 @@ function bindUi() {
   el("btnClearTest")?.addEventListener("click", clearTest);
   el("btnSyncGitHub")?.addEventListener("click", openGitHubSaveModal);
   el("btnAddRow")?.addEventListener("click", () => {
-    rows.push({ id: crypto.randomUUID(), field: "", type: "text", format: "text:auto", value: "" });
+    rows.push({ id: crypto.randomUUID(), field: "", type: "text", format: "text:auto", value: "", description: "" });
     renderRows();
     // Focus last row input
     setTimeout(() => {
@@ -1412,6 +1468,17 @@ function bindUi() {
   el("renameNewName")?.addEventListener("keydown", (e) => { if (e.key === "Enter") doRename(); });
   el("modalRenameBackdrop")?.addEventListener("click", (e) => { if (e.target === el("modalRenameBackdrop")) closeRenameModal(); });
   el("modalRename")?.addEventListener("click", e => e.stopPropagation());
+
+  // Description modal
+  el("btnDescClose")?.addEventListener("click", closeDescriptionModal);
+  el("btnDescCancel")?.addEventListener("click", closeDescriptionModal);
+  el("btnDescSave")?.addEventListener("click", saveDescriptionModal);
+  el("btnDescClear")?.addEventListener("click", () => {
+    if (el("descText")) el("descText").value = "";
+    saveDescriptionModal();
+  });
+  el("modalDescBackdrop")?.addEventListener("click", (e) => { if (e.target === el("modalDescBackdrop")) closeDescriptionModal(); });
+  el("modalDesc")?.addEventListener("click", e => e.stopPropagation());
 
   // GitHub modal
   el("modalGHBackdrop")?.addEventListener("click", (e) => { if (e.target === el("modalGHBackdrop")) closeGHModal(); });

@@ -111,6 +111,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
 }
 
 /* ========== Action Bar ========== */
@@ -144,7 +145,7 @@ body {
 /* ========== Table ========== */
 .table-header {
   display: grid;
-  grid-template-columns: 26px 1fr 1fr 90px 64px;
+  grid-template-columns: 26px 1fr 1fr 90px 92px;
   gap: 6px;
   padding: 8px 12px;
   background: #f3f4f6;
@@ -169,7 +170,7 @@ body {
 /* ========== Row ========== */
 .row {
   display: grid;
-  grid-template-columns: 26px 1fr 1fr 90px 64px;
+  grid-template-columns: 26px 1fr 1fr 90px 92px;
   gap: 6px;
   padding: 8px 12px;
   border-top: 1px solid #e5e7eb;
@@ -279,8 +280,15 @@ body {
 .row-btn.rename { background: #e0f2fe; color: #0369a1; }
 .row-btn.rename:hover { background: #bae6fd; }
 
+.row-btn.describe { background: #f3f4f6; color: #6b7280; font-size: 13px; }
+.row-btn.describe:hover { background: #e0f2fe; color: #0369a1; }
+.row-btn.describe.has-desc { background: #fef9c3; color: #b45309; }
+.row-btn.describe.has-desc:hover { background: #fef08a; }
+
 .row-btn.delete { background: #fee2e2; color: #dc2626; font-size: 20px; font-weight: 400; }
 .row-btn.delete:hover { background: #fecaca; }
+
+.desc-textarea { resize: vertical; min-height: 80px; font-family: inherit; }
 
 /* ========== Empty state ========== */
 .empty-state {

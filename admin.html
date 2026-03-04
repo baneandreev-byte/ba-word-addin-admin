@@ -43,19 +43,21 @@
       </div>
 
       <!-- Table header -->
-      <div class="table-header">
-        <div class="th"></div>
-        <div class="th">POLJE</div>
-        <div class="th">VREDNOST (TEST)</div>
-        <div class="th">TIP</div>
-        <div class="th"></div>
-      </div>
+      <div class="table-wrapper">
+        <div class="table-header">
+          <div class="th"></div>
+          <div class="th">POLJE</div>
+          <div class="th">VREDNOST (TEST)</div>
+          <div class="th">TIP</div>
+          <div class="th"></div>
+        </div>
 
-      <!-- Rows container -->
-      <div id="rows" class="table-body">
-        <div class="empty-state">
-          <div class="empty-icon">📄</div>
-          <div>Otvori templejt pa klikni <strong>Skeniraj</strong><br>ili dodaj nova polja ručno.</div>
+        <!-- Rows container -->
+        <div id="rows" class="table-body">
+          <div class="empty-state">
+            <div class="empty-icon">📄</div>
+            <div>Otvori templejt pa klikni <strong>Skeniraj</strong><br>ili dodaj nova polja ručno.</div>
+          </div>
         </div>
       </div>
 
@@ -213,6 +215,33 @@
     </div>
   </div>
 
+
+  <!-- ========== MODAL: Objašnjenje polja ========== -->
+  <div id="modalDescBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modalDesc" class="modal-dialog hidden">
+    <div class="modal-header">
+      <h3>Objašnjenje polja</h3>
+      <button id="btnDescClose" class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Polje:</label>
+        <div id="descFieldName" class="field-name-pill" style="display:inline-block;"></div>
+      </div>
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">Objašnjenje (vidljivo korisniku):</label>
+        <textarea id="descText" class="form-input" rows="4"
+          placeholder="Unesite objašnjenje šta se očekuje u ovom polju..."
+          style="resize:vertical; min-height:80px;"></textarea>
+        <div class="form-hint">Korisnik će videti ovo objašnjenje klikom na dugme u klijentskoj aplikaciji.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="btnDescClear" class="btn-secondary">Obriši</button>
+      <button id="btnDescCancel" class="btn-secondary">Otkaži</button>
+      <button id="btnDescSave" class="btn-primary">Sačuvaj</button>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
