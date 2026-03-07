@@ -1000,11 +1000,84 @@ async function updateDocxTags(arrayBuffer) {
 
   zip.file("word/document.xml", updatedWithAlias);
 
-  // Ako postoji .dotx (template), ažuriraj i word/settings.xml ako postoji
-  // (ne menjamo, samo repackujemo)
+  // Upiši/ažuriraj Custom XML Part koji klijentska aplikacija čita
+  await upsertClientStateXmlPart(zip);
 
   const result = await zip.generateAsync({ type: "arraybuffer" });
   return result;
+}
+
+// ==========================================
+// Upisuje ili ažurira Custom XML Part za klijentsku aplikaciju
+// Namespace: http://biroa.rs/word-addin/state
+// Klijentska app čita odatle listu polja (field, type, format, value)
+// ==========================================
+async function upsertClientStateXmlPart(zip) {
+  const CLIENT_NS = "http://biroa.rs/word-addin/state";
+
+  // Izgradi XML sa aktuelnim rows[] — vrednosti prazne (templejt)
+  let stateXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<state xmlns="${CLIENT_NS}">`;
+  for (const r of rows) {
+    if (!r.field) continue;
+    stateXml += `<item field="${xmlEscape(r.field)}" value="" type="${xmlEscape(r.type || "text")}" format="${xmlEscape(r.format || "text:auto")}"/>`;
+  }
+  stateXml += "</state>";
+
+  // Nađi postojeći item sa ovim namespace-om
+  const files = Object.keys(zip.files);
+  const itemFiles = files.filter(f => /^customXml\/item\d+\.xml$/.test(f));
+
+  for (const itemPath of itemFiles) {
+    const content = await zip.file(itemPath).async("string");
+    if (content.includes(CLIENT_NS)) {
+      // Pronašli smo ga – samo zameni sadržaj
+      zip.file(itemPath, stateXml);
+      return;
+    }
+  }
+
+  // Nije pronađen – kreiraj novi
+  const nums = itemFiles.map(f => parseInt(f.match(/(\d+)\.xml$/)?.[1] || "0"));
+  const nextNum = nums.length ? Math.max(...nums) + 1 : 1;
+
+  const itemPath = `customXml/item${nextNum}.xml`;
+  const propsPath = `customXml/itemProps${nextNum}.xml`;
+  const relsPath = `customXml/_rels/item${nextNum}.xml.rels`;
+  const guid = crypto.randomUUID().toUpperCase();
+
+  const propsXml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<ds:datastoreItem ds:itemID="{${guid}}" xmlns:ds="http://schemas.openxmlformats.org/officeDocument/2006/customXml"><ds:schemaRefs><ds:schemaRef ds:uri="${CLIENT_NS}"/></ds:schemaRefs></ds:datastoreItem>`;
+  const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" Target="itemProps${nextNum}.xml"/></Relationships>`;
+
+  zip.file(itemPath, stateXml);
+  zip.file(propsPath, propsXml);
+  zip.file(relsPath, relsXml);
+
+  // Dodaj Content_Types.xml override ako već nije tu
+  const ctFile = zip.file("[Content_Types].xml");
+  if (ctFile) {
+    let ct = await ctFile.async("string");
+    if (!ct.includes(`item${nextNum}.xml`)) {
+      ct = ct.replace("</Types>",
+        `<Override PartName="/customXml/item${nextNum}.xml" ContentType="application/xml"/>\n` +
+        `<Override PartName="/customXml/itemProps${nextNum}.xml" ContentType="application/vnd.openxmlformats-officedocument.customXmlProperties+xml"/>\n` +
+        `</Types>`
+      );
+      zip.file("[Content_Types].xml", ct);
+    }
+  }
+
+  // Dodaj relaciju u word/_rels/document.xml.rels
+  const docRelsPath = "word/_rels/document.xml.rels";
+  const docRelsFile = zip.file(docRelsPath);
+  if (docRelsFile) {
+    let docRels = await docRelsFile.async("string");
+    const rIds = [...docRels.matchAll(/Id="rId(\d+)"/g)].map(m => parseInt(m[1]));
+    const nextRId = rIds.length ? Math.max(...rIds) + 1 : 100;
+    docRels = docRels.replace("</Relationships>",
+      `<Relationship Id="rId${nextRId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml" Target="../customXml/item${nextNum}.xml"/>\n</Relationships>`
+    );
+    zip.file(docRelsPath, docRels);
+  }
 }
 
 // ==========================================
