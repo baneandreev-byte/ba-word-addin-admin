@@ -1,9 +1,13 @@
 /* global Office, Word */
 
 // ============================================
-// BiroA ADMIN – V1.0
+// BiroA ADMIN – V1.1
 // Word taskpane za upravljanje templejt poljima
+// V1.1: state XML sada nosi order + description (7-atributni ugovor),
+//       Skeniraj čita objašnjenja nazad, poštuje sačuvani redosled
+//       i spaja state-only polja (bez žive kontrole).
 // ============================================
+console.log("🔧 BiroA ADMIN VERZIJA: V1.1 – order+description u state XML, scan reorder/union");
 
 // ==========================================
 // KONFIGURACIJA (defaults – prepisuju se iz XML-a)
@@ -553,11 +557,13 @@ async function scanDocument() {
   const CLIENT_XML_NS = "http://biroa.rs/word-addin/state";
 
   try {
-    const found = [];
+    const found = [];                 // žive BA_FIELD kontrole (telo dokumenta)
     const seenKeys = new Set();
+    const savedByField = new Map();    // field -> { value, description, type, format, order }
+    const savedOrder = [];             // polja redom kako se pojavljuju u state XML-u
 
     await Word.run(async (context) => {
-      // 1) Učitaj content controls (za tip/format)
+      // 1) Učitaj content controls (za tip/format iz živih kontrola)
       const ccs = context.document.contentControls;
       ccs.load("items/tag");
       await context.sync();
@@ -576,7 +582,8 @@ async function scanDocument() {
         });
       }
 
-      // 2) Učitaj sačuvane vrednosti iz klijentskog XML state-a
+      // 2) Učitaj sačuvane podatke iz klijentskog XML state-a
+      //    (vrednost, objašnjenje, tip, format + REDOSLED — izvor istine)
       const parts = context.document.customXmlParts;
       parts.load("items");
       await context.sync();
@@ -588,10 +595,9 @@ async function scanDocument() {
         const xmlResult = clientPart.getXml();
         await context.sync();
         const str = xmlResult.value || "";
-        // Parsiraj <item field="..." value="..."/> atribute
+        // Parsiraj <item .../> atribute redom kako se pojavljuju
         const re = /<item\s+([^/>]+?)\s*\/>/g;
         let m;
-        const savedValues = new Map();
         while ((m = re.exec(str))) {
           const attrs = m[1];
           const getAttr = (name) => {
@@ -603,27 +609,75 @@ async function scanDocument() {
               .replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&");
           };
           const f = getAttr("field");
-          const v = getAttr("value");
-          if (f) savedValues.set(f, v);
-        }
-        // Ubaci sačuvane vrednosti u pronađena polja
-        for (const row of found) {
-          if (savedValues.has(row.field)) {
-            row.value = savedValues.get(row.field);
-          }
+          if (!f) continue;
+          const ordRaw = getAttr("order");
+          const ordNum = ordRaw === "" ? NaN : parseInt(ordRaw, 10);
+          savedByField.set(f, {
+            value: getAttr("value"),
+            description: getAttr("description"),
+            type: getAttr("type") || "text",
+            format: getAttr("format") || "text:auto",
+            order: ordNum,
+          });
+          savedOrder.push(f);
         }
       }
     });
 
-    if (found.length === 0) {
+    // 3) Spoji žive kontrole sa sačuvanim podacima:
+    //    - vrednost i objašnjenje iz state-a prelaze na živo polje
+    //    - polja koja postoje u state-u ali NEMAJU živu kontrolu rekonstruišu se iz state-a
+    const foundByField = new Map(found.map(r => [r.field, r]));
+
+    for (const r of found) {
+      const saved = savedByField.get(r.field);
+      if (saved) {
+        r.value = saved.value || "";
+        r.description = saved.description || "";
+      }
+    }
+
+    for (const f of savedOrder) {
+      if (foundByField.has(f)) continue;
+      const saved = savedByField.get(f);
+      const rec = {
+        id: crypto.randomUUID(),
+        field: f,
+        type: saved.type,
+        format: saved.format,
+        value: saved.value || "",
+        description: saved.description || "",
+      };
+      found.push(rec);
+      foundByField.set(f, rec);
+    }
+
+    // 4) Reorder po redosledu iz state XML-a (izvor istine za raspored).
+    //    Poznata polja idu prvo (po order atributu, fallback na poziciju u XML-u);
+    //    nova polja (živa kontrola koju state još ne poznaje) idu na kraj, redom u dokumentu.
+    const orderIndex = new Map();
+    savedOrder.forEach((f, i) => {
+      const ord = savedByField.get(f)?.order;
+      orderIndex.set(f, Number.isFinite(ord) ? ord : i);
+    });
+    const inState = [];
+    const orphans = [];
+    for (const r of found) {
+      if (orderIndex.has(r.field)) inState.push(r);
+      else orphans.push(r);
+    }
+    inState.sort((a, b) => orderIndex.get(a.field) - orderIndex.get(b.field));
+    const ordered = inState.concat(orphans);
+
+    if (ordered.length === 0) {
       setStatus("Nije pronađeno nijedno BA_FIELD polje u dokumentu.", "warn");
       return;
     }
 
-    rows = found;
+    rows = ordered;
     selectedRowIndex = null;
     renderRows();
-    setStatus(`Skeniranje gotovo: ${found.length} polje${found.length !== 1 ? "a" : ""} pronađeno.`, "success");
+    setStatus(`Skeniranje gotovo: ${ordered.length} polje${ordered.length !== 1 ? "a" : ""} pronađeno.`, "success");
   } catch (err) {
     console.error("Scan greška:", err);
     setStatus("Greška pri skeniranju dokumenta.", "error");
@@ -1016,10 +1070,13 @@ async function upsertClientStateXmlPart(zip) {
   const CLIENT_NS = "http://biroa.rs/word-addin/state";
 
   // Izgradi XML sa aktuelnim rows[] — vrednosti prazne (templejt)
+  // Ugovor o podacima (isti kao user app): order, field, value, type, format, description
   let stateXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<state xmlns="${CLIENT_NS}">`;
+  let order = 0;
   for (const r of rows) {
     if (!r.field) continue;
-    stateXml += `<item field="${xmlEscape(r.field)}" value="" type="${xmlEscape(r.type || "text")}" format="${xmlEscape(r.format || "text:auto")}"/>`;
+    stateXml += `<item order="${order}" field="${xmlEscape(r.field)}" value="" type="${xmlEscape(r.type || "text")}" format="${xmlEscape(r.format || "text:auto")}" description="${xmlEscape(r.description || "")}"/>`;
+    order++;
   }
   stateXml += "</state>";
 
