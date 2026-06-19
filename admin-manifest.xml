@@ -6,13 +6,13 @@
   xsi:type="TaskPaneApp">
 
   <!-- ============================================ -->
-  <!-- BiroA ADMIN – V1.0.0                         -->
+  <!-- BiroA ADMIN – V2                             -->
   <!-- Upravljanje templejt poljima + GitHub sync    -->
   <!-- ============================================ -->
 
   <!-- DRUGAČIJI ID od korisničke app! -->
   <Id>7a3c9f12-84ab-4d2e-b5f7-9e0c1d2f3a4b</Id>
-  <Version>1.0.06</Version>
+  <Version>2</Version>
   <ProviderName>BiroA</ProviderName>
   <DefaultLocale>sr-RS</DefaultLocale>
 
